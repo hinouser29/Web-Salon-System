@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -136,7 +137,10 @@ class AuthServiceTest {
         when(userRepository.findByEmailIgnoreCase("user@example.com"))
                 .thenReturn(Optional.of(localUser));
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenReturn(new UsernamePasswordAuthenticationToken("user@example.com", "password"));
+                .thenReturn(new UsernamePasswordAuthenticationToken(
+                        "user@example.com",
+                        "password",
+                        Collections.emptyList()));
         when(jwtService.generateAccessToken(localUser)).thenReturn("access");
         when(jwtService.generateRefreshToken(localUser)).thenReturn("refresh");
         when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(3600L);
