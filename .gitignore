@@ -1,0 +1,24 @@
+# Build
+backend/target/
+apps/web/node_modules/
+apps/web/.next/
+apps/web/out/
+
+# Uploads & secrets
+backend/uploads/
+**/.env
+**/.env.local
+**/application-local.yml
+
+# IDE
+.idea/
+*.iml
+.vscode/settings.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.zip
+*.log

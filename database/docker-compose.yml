@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: spa-management-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: spa_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - spa_pg_data:/var/lib/postgresql/data
+
+volumes:
+  spa_pg_data:
