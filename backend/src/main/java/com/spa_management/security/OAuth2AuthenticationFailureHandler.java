@@ -28,7 +28,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             AuthenticationException exception) throws IOException {
 
         String message = exception.getMessage() != null ? exception.getMessage() : "OAuth2 login failed";
-        String redirectUrl = UriComponentsBuilder.fromUriString(appProperties.getOauth2().getRedirectUri())
+        String redirectUrl = UriComponentsBuilder.fromUriString(appProperties.getFrontendUrl() + "/login")
                 .queryParam("error", URLEncoder.encode(message, StandardCharsets.UTF_8))
                 .build()
                 .toUriString();

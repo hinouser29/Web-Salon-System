@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Verify Email')}"></head>
+<body>
+<div class="container">
+    <h2>Email Verification</h2>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+    <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+    <p><a th:href="@{/login}">Go to login</a></p>
+</div>
+</body>
+</html>

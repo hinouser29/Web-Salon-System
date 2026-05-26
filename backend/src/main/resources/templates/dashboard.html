@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<div class="container">
+    <h2>Dashboard</h2>
+    <p>Welcome, <strong th:text="${user.fullName != null ? user.fullName : user.email}">User</strong>!</p>
+    <img th:if="${user.avatarUrl}" th:src="${user.avatarUrl}" alt="avatar" class="avatar"/>
+    <ul>
+        <li>Email: <span th:text="${user.email}"></span></li>
+        <li>Role: <span th:text="${user.role}"></span></li>
+        <li>Provider: <span th:text="${user.provider}"></span></li>
+        <li>Verified: <span th:text="${user.isVerified}"></span></li>
+    </ul>
+    <a th:href="@{/profile}" class="btn">Edit profile</a>
+</div>
+</body>
+</html>

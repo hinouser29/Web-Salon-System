@@ -12,18 +12,19 @@ Monorepo quản lý chuỗi Spa / Nails / Hair Salon.
 
 ## Quick start
 
-```bash
-# Database
-cd database && docker compose up -d
+Xem chi tiết cấu hình Supabase / Google OAuth / Gmail: **[docs/SETUP-ITER1.md](docs/SETUP-ITER1.md)**
+
+```powershell
+# Database (local) hoặc dùng Supabase — set biến môi trường theo backend/.env.example
+cd database; docker compose up -d
 
 # Backend
-cd backend && .\mvnw.cmd spring-boot:run
-
-# Frontend (optional)
-cd apps/web && npm install && npm run dev
+cd backend
+mvn clean install
+mvn spring-boot:run
 ```
 
-- API: http://localhost:8080
-- Swagger: http://localhost:8080/swagger-ui.html
+- **Web UI (Thymeleaf):** http://localhost:8080/login
+- **REST API / Swagger:** http://localhost:8080/swagger-ui.html
 
 Repository: https://github.com/hinouser29/Web-Salon-System

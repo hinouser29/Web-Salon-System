@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Profile')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<div class="container">
+    <h2>My Profile</h2>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+    <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+
+    <img th:if="${user.avatarUrl}" th:src="${user.avatarUrl}" alt="avatar" class="avatar"/>
+    <img th:unless="${user.avatarUrl}" src="https://via.placeholder.com/96" alt="avatar" class="avatar"/>
+
+    <form th:action="@{/profile/avatar}" method="post" enctype="multipart/form-data" style="margin-top:12px;">
+        <label>Upload avatar (jpeg/png/webp)</label>
+        <input type="file" name="file" accept="image/jpeg,image/png,image/webp" required/>
+        <button type="submit">Upload avatar</button>
+    </form>
+
+    <hr/>
+    <form th:action="@{/profile}" method="post" th:object="${profileRequest}">
+        <label>Full name</label>
+        <input type="text" th:field="*{fullName}"/>
+        <label>Phone</label>
+        <input type="text" th:field="*{phone}"/>
+        <label>Address</label>
+        <textarea th:field="*{address}" rows="2"></textarea>
+        <label>Birthday</label>
+        <input type="date" th:field="*{birthday}"/>
+        <label>Gender</label>
+        <select th:field="*{gender}">
+            <option value="">-- Select --</option>
+            <option th:each="g : ${genders}" th:value="${g}" th:text="${g}"></option>
+        </select>
+        <p>Email: <span th:text="${user.email}"></span> (read-only)</p>
+        <button type="submit">Save profile</button>
+    </form>
+
+    <hr/>
+    <h3>Change password</h3>
+    <form th:if="${user.provider != null and user.provider.toString() == 'LOCAL'}" th:action="@{/profile/change-password}" method="post" th:object="${changePasswordRequest}">
+        <label>Current password</label>
+        <input type="password" th:field="*{oldPassword}" required/>
+        <label>New password</label>
+        <input type="password" th:field="*{newPassword}" required minlength="8"/>
+        <button type="submit">Change password</button>
+    </form>
+    <p th:unless="${user.provider != null and user.provider.toString() == 'LOCAL'}">Google account — password change is not available.</p>
+</div>
+</body>
+</html>

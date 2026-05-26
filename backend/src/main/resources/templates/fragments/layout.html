@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="${title}">Spa Salon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body>
+<header th:fragment="header">
+    <div><strong>Spa Salon System</strong></div>
+    <nav>
+        <a th:href="@{/dashboard}">Dashboard</a>
+        <a th:href="@{/profile}">Profile</a>
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+            <button type="submit" style="margin-left:12px;">Logout</button>
+        </form>
+    </nav>
+</header>
+</body>
+</html>

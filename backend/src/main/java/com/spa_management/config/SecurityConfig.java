@@ -21,8 +21,8 @@ import com.spa_management.security.CustomUserDetailsService;
 import com.spa_management.security.JwtAuthenticationFilter;
 import com.spa_management.security.OAuth2AuthenticationFailureHandler;
 import com.spa_management.security.OAuth2AuthenticationSuccessHandler;
+import com.spa_management.security.DelegatingAuthenticationEntryPoint;
 import com.spa_management.security.RestAccessDeniedHandler;
-import com.spa_management.security.RestAuthenticationEntryPoint;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,7 +34,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final RestAuthenticationEntryPoint authenticationEntryPoint;
+    private final DelegatingAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
@@ -49,6 +49,20 @@ public class SecurityConfig {
             "/api/auth/forgot-password",
             "/api/auth/reset-password",
             "/api/auth/refresh"
+    };
+
+    private static final String[] PUBLIC_WEB_PATHS = {
+            "/",
+            "/login",
+            "/register",
+            "/verify-email",
+            "/forgot-password",
+            "/reset-password",
+            "/resend-verification",
+            "/oauth/callback",
+            "/css/**",
+            "/js/**",
+            "/error"
     };
 
     private static final String[] PUBLIC_RESOURCE_PATHS = {
@@ -70,10 +84,13 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_AUTH_PATHS).permitAll()
+                        .requestMatchers(PUBLIC_WEB_PATHS).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/change-password").authenticated()
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers(PUBLIC_RESOURCE_PATHS).permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        .requestMatchers("/dashboard", "/profile", "/logout").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/profile/**").authenticated()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))

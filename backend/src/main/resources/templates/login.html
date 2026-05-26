@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Login')}"></head>
+<body>
+<div class="container">
+    <h2>Login</h2>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+    <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+
+    <form th:action="@{/login}" method="post" th:object="${loginRequest}">
+        <label>Email</label>
+        <input type="email" th:field="*{email}" required/>
+        <label>Password</label>
+        <input type="password" th:field="*{password}" required/>
+        <button type="submit">Login</button>
+    </form>
+
+    <p style="margin-top:16px;">
+        <a th:href="@{/oauth2/authorization/google}" class="btn btn-secondary">Login with Google</a>
+    </p>
+    <p><a th:href="@{/register}">Create account</a> | <a th:href="@{/forgot-password}">Forgot password?</a></p>
+
+    <hr/>
+    <h3>Resend verification email</h3>
+    <form th:action="@{/resend-verification}" method="post" th:object="${resendRequest}">
+        <label>Email</label>
+        <input type="email" th:field="*{email}" required/>
+        <button type="submit" class="btn-secondary">Resend verification</button>
+    </form>
+</div>
+</body>
+</html>

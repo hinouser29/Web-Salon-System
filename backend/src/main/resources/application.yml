@@ -1,18 +1,30 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: spa-management-backend
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:spa_management}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: jdbc:postgresql://db.aorrdsecmfvdauvozxgo.supabase.co:5432/postgres
+    username: postgres
+    password: YOUR_SUPABASE_PASSWORD
   jpa:
     hibernate:
       ddl-auto: update
+      show-sql: true
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  thymeleaf:
+    cache: false
   servlet:
     multipart:
       max-file-size: 5MB
@@ -35,9 +47,15 @@ app:
     refresh-token-expiration-ms: 604800000
   verification-token-expiration-hours: 24
   password-reset-token-expiration-hours: 1
-  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  frontend-url: ${FRONTEND_URL:http://localhost:8080}
   oauth2:
-    redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/oauth/callback}
+    redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:8080/oauth/callback}
+  cookie:
+    access-token-name: spa_access_token
+    refresh-token-name: spa_refresh_token
+    secure: ${COOKIE_SECURE:false}
+    max-age-access-seconds: 3600
+    max-age-refresh-seconds: 604800
   upload:
     avatar-dir: uploads/avatars
     allowed-content-types: image/jpeg,image/png,image/webp
