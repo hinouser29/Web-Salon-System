@@ -67,6 +67,14 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("File size exceeds the maximum allowed limit"));
     }
 
+    @ExceptionHandler(org.springframework.mail.MailException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMailException(org.springframework.mail.MailException ex) {
+        log.error("Failed to send email", ex);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("Hệ thống không thể gửi email xác thực. Vui lòng kiểm tra lại địa chỉ email hoặc liên hệ Admin."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("Unhandled exception", ex);

@@ -1,13 +1,14 @@
 package com.spa_management.service;
 
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.spa_management.config.AppProperties;
 
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,54 +21,49 @@ public class EmailService {
     private final AppProperties appProperties;
 
     @Async("emailTaskExecutor")
-    public void sendVerificationEmail(String toEmail, String token) {
-        String link = appProperties.getFrontendUrl() + "/verify-email?token=" + token;
-        String subject = "Verify your Spa Management account";
+    public void sendVerificationEmail(String toEmail, String otp) {
+        String subject = "Ma xac thuc tai khoan Web Salon";
         String body = """
-                Hello,
+                <html><body>
+                <h2>Xin chao!</h2>
+                <p>Ma OTP de xac thuc tai khoan cua ban la:</p>
+                <h1 style='color: #db2777; letter-spacing: 5px; font-size: 36px;'>%s</h1>
+                <p>Ma nay se het han sau %d phut. Vui long khong chia se ma nay cho bat ky ai.</p>
+                <br><p>Tran trong,<br>Web Salon Team</p>
+                </body></html>
+                """.formatted(otp, appProperties.getOtpExpirationMinutes());
 
-                Please verify your email address by clicking the link below:
-
-                %s
-
-                This link expires in %d hours.
-
-                If you did not create an account, please ignore this email.
-                """.formatted(link, appProperties.getVerificationTokenExpirationHours());
-
-        sendMail(toEmail, subject, body);
+        sendHtmlMail(toEmail, subject, body);
     }
 
     @Async("emailTaskExecutor")
-    public void sendPasswordResetEmail(String toEmail, String token) {
-        String link = appProperties.getFrontendUrl() + "/reset-password?token=" + token;
-        String subject = "Reset your Spa Management password";
+    public void sendPasswordResetEmail(String toEmail, String otp) {
+        String subject = "Khoi phuc mat khau Web Salon";
         String body = """
-                Hello,
+                <html><body>
+                <h2>Xin chao!</h2>
+                <p>Ma OTP de khoi phuc mat khau cua ban la:</p>
+                <h1 style='color: #db2777; letter-spacing: 5px; font-size: 36px;'>%s</h1>
+                <p>Ma nay se het han sau %d phut. Vui long khong chia se ma nay cho bat ky ai.</p>
+                <br><p>Tran trong,<br>Web Salon Team</p>
+                </body></html>
+                """.formatted(otp, appProperties.getOtpExpirationMinutes());
 
-                You requested a password reset. Click the link below to set a new password:
-
-                %s
-
-                This link expires in %d hour(s).
-
-                If you did not request this, please ignore this email.
-                """.formatted(link, appProperties.getPasswordResetTokenExpirationHours());
-
-        sendMail(toEmail, subject, body);
+        sendHtmlMail(toEmail, subject, body);
     }
 
-    private void sendMail(String to, String subject, String text) {
+    private void sendHtmlMail(String to, String subject, String htmlContent) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(text);
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
             if (StringUtils.hasText(appProperties.getFrontendUrl())) {
-                message.setFrom("noreply@spa-management.local");
+                helper.setFrom("noreply@spa-management.local");
             }
             mailSender.send(message);
-            log.info("Email sent to {}", to);
+            log.info("OTP HTML email sent to {}", to);
         } catch (Exception ex) {
             log.warn("Failed to send email to {}: {}", to, ex.getMessage());
         }

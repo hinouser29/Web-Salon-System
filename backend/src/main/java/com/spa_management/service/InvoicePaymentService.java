@@ -1,0 +1,72 @@
+package com.spa_management.service;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.spa_management.dto.request.PayInvoiceRequest;
+import com.spa_management.dto.response.InvoiceResponse;
+import com.spa_management.entity.Customer;
+import com.spa_management.entity.Invoice;
+import com.spa_management.entity.Payment;
+import com.spa_management.entity.enums.PaymentStatus;
+import com.spa_management.exception.BusinessException;
+import com.spa_management.exception.ErrorCode;
+import com.spa_management.mapper.SalonMapper;
+import com.spa_management.repository.CustomerRepository;
+import com.spa_management.repository.InvoiceRepository;
+import com.spa_management.util.SecurityUtils;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class InvoicePaymentService {
+
+    private final InvoiceRepository invoiceRepository;
+    private final CustomerRepository customerRepository;
+    private final SalonMapper salonMapper;
+
+    @Transactional(readOnly = true)
+    public List<InvoiceResponse> listMyInvoices() {
+        Customer customer = customerRepository.findByUserId(SecurityUtils.getCurrentUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
+
+        return invoiceRepository.findByCustomerIdWithPayments(customer.getId()).stream()
+                .map(salonMapper::toInvoiceResponse)
+                .toList();
+    }
+
+    @Transactional
+    public InvoiceResponse payInvoice(UUID invoiceId, PayInvoiceRequest request) {
+        Customer customer = customerRepository.findByUserId(SecurityUtils.getCurrentUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
+
+        Invoice invoice = invoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVOICE_NOT_FOUND));
+
+        if (!invoice.getCustomer().getId().equals(customer.getId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        if (invoice.getPaymentStatus() == PaymentStatus.PAID) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Invoice is already paid.");
+        }
+
+        Payment payment = Payment.builder()
+                .invoice(invoice)
+                .amount(invoice.getTotalAmount())
+                .paymentMethod(request.getPaymentMethod())
+                .transactionCode("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .paymentStatus(PaymentStatus.PAID)
+                .paidAt(Instant.now())
+                .build();
+        invoice.getPayments().add(payment);
+        invoice.setPaymentStatus(PaymentStatus.PAID);
+        invoice = invoiceRepository.save(invoice);
+
+        return salonMapper.toInvoiceResponse(invoice);
+    }
+}

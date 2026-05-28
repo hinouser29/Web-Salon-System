@@ -9,9 +9,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.spa_management.entity.User;
+import com.spa_management.entity.Customer;
 import com.spa_management.entity.enums.AuthProvider;
 import com.spa_management.entity.enums.Role;
+import com.spa_management.entity.enums.UserStatus;
 import com.spa_management.repository.UserRepository;
+import com.spa_management.repository.CustomerRepository;
+import com.spa_management.repository.RoleRepository;
+import com.spa_management.repository.UserRoleRepository;
+import com.spa_management.entity.UserRole;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +26,9 @@ import lombok.RequiredArgsConstructor;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
+    private final CustomerRepository customerRepository;
+    private final RoleRepository roleRepository;
+    private final UserRoleRepository userRoleRepository;
 
     @Override
     @Transactional
@@ -66,10 +75,30 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .avatarUrl(userInfo.getPicture())
                 .googleId(userInfo.getId())
                 .provider(AuthProvider.GOOGLE)
-                .role(Role.USER)
+                .role(Role.CUSTOMER)
                 .verified(true)
-                .active(true)
+                .status(UserStatus.ACTIVE)
                 .build();
-        return userRepository.save(user);
+        user = userRepository.save(user);
+
+        Customer customer = Customer.builder()
+                .user(user)
+                .loyaltyPoints(0)
+                .build();
+        customerRepository.save(customer);
+        assignCustomerRole(user);
+
+        return user;
+    }
+
+    private void assignCustomerRole(User user) {
+        roleRepository.findByName("CUSTOMER").ifPresent(customerRole -> {
+            if (!userRoleRepository.existsByUserIdAndRoleId(user.getId(), customerRole.getId())) {
+                userRoleRepository.save(UserRole.builder()
+                        .user(user)
+                        .role(customerRole)
+                        .build());
+            }
+        });
     }
 }

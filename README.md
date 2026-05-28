@@ -28,3 +28,13 @@ mvn spring-boot:run
 - **REST API / Swagger:** http://localhost:8080/swagger-ui.html
 
 Repository: https://github.com/hinouser29/Web-Salon-System
+
+## Run full stack with Docker
+
+```powershell
+docker compose up --build
+```
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8080/swagger-ui.html
+- PostgreSQL: localhost:5432

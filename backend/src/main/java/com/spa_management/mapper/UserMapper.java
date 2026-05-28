@@ -8,7 +8,7 @@ import com.spa_management.entity.User;
 @Component
 public class UserMapper {
 
-    public UserProfileResponse toProfileResponse(User user) {
+    public UserProfileResponse toProfileResponse(User user, com.spa_management.entity.Customer customer) {
         if (user == null) {
             return null;
         }
@@ -17,14 +17,14 @@ public class UserMapper {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .phone(user.getPhone())
-                .address(user.getAddress())
-                .birthday(user.getBirthday())
-                .gender(user.getGender())
+                .address(customer != null ? customer.getAddress() : null)
+                .birthday(customer != null ? customer.getBirthday() : null)
+                .gender(customer != null && customer.getGender() != null ? com.spa_management.entity.enums.Gender.fromValue(customer.getGender()) : null)
                 .avatarUrl(user.getAvatarUrl())
                 .provider(user.getProvider())
                 .role(user.getRole())
                 .isVerified(user.isVerified())
-                .isActive(user.isActive())
+                .isActive(user.getStatus() == com.spa_management.entity.enums.UserStatus.ACTIVE)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

@@ -40,29 +40,37 @@ public class TokenService {
     public VerificationToken createVerificationToken(User user) {
         verificationTokenRepository.deleteByUser(user);
         VerificationToken token = VerificationToken.builder()
-                .token(tokenGenerator.generateSecureToken())
+                .token(tokenGenerator.generateOtp())
                 .user(user)
                 .expiresAt(Instant.now().plus(
-                        appProperties.getVerificationTokenExpirationHours(), ChronoUnit.HOURS))
+                        appProperties.getOtpExpirationMinutes(), ChronoUnit.MINUTES))
                 .build();
         return verificationTokenRepository.save(token);
     }
 
-    @Transactional(readOnly = true)
-    public VerificationToken getValidVerificationToken(String rawToken) {
-        VerificationToken token = verificationTokenRepository.findByToken(rawToken)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN));
+    @Transactional
+    public void validateVerificationToken(User user, String rawToken) {
+        VerificationToken token = verificationTokenRepository.findByUser(user)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "No active OTP found for this user."));
+
         if (token.isUsed()) {
             throw new BusinessException(ErrorCode.TOKEN_ALREADY_USED);
         }
         if (token.isExpired()) {
-            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Verification token has expired");
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Verification token has expired.");
         }
-        return token;
-    }
 
-    @Transactional
-    public void markVerificationTokenUsed(VerificationToken token) {
+        if (!token.getToken().equals(rawToken)) {
+            token.setFailedAttempts(token.getFailedAttempts() + 1);
+            if (token.getFailedAttempts() >= 5) {
+                token.setExpiresAt(Instant.now().minusSeconds(1)); // Revoke it
+                verificationTokenRepository.save(token);
+                throw new BusinessException(ErrorCode.INVALID_TOKEN, "Too many failed attempts. The OTP has been revoked. Please request a new one.");
+            }
+            verificationTokenRepository.save(token);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid OTP.");
+        }
+
         token.setUsedAt(Instant.now());
         verificationTokenRepository.save(token);
     }
@@ -71,29 +79,37 @@ public class TokenService {
     public PasswordResetToken createPasswordResetToken(User user) {
         passwordResetTokenRepository.deleteByUser(user);
         PasswordResetToken token = PasswordResetToken.builder()
-                .token(tokenGenerator.generateSecureToken())
+                .token(tokenGenerator.generateOtp())
                 .user(user)
                 .expiresAt(Instant.now().plus(
-                        appProperties.getPasswordResetTokenExpirationHours(), ChronoUnit.HOURS))
+                        appProperties.getOtpExpirationMinutes(), ChronoUnit.MINUTES))
                 .build();
         return passwordResetTokenRepository.save(token);
     }
 
-    @Transactional(readOnly = true)
-    public PasswordResetToken getValidPasswordResetToken(String rawToken) {
-        PasswordResetToken token = passwordResetTokenRepository.findByToken(rawToken)
-                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN));
+    @Transactional
+    public void validatePasswordResetToken(User user, String rawToken) {
+        PasswordResetToken token = passwordResetTokenRepository.findByUser(user)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN, "No active password reset OTP found for this user."));
+
         if (token.isUsed()) {
             throw new BusinessException(ErrorCode.TOKEN_ALREADY_USED);
         }
         if (token.isExpired()) {
-            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Password reset token has expired");
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Password reset token has expired.");
         }
-        return token;
-    }
 
-    @Transactional
-    public void markPasswordResetTokenUsed(PasswordResetToken token) {
+        if (!token.getToken().equals(rawToken)) {
+            token.setFailedAttempts(token.getFailedAttempts() + 1);
+            if (token.getFailedAttempts() >= 5) {
+                token.setExpiresAt(Instant.now().minusSeconds(1)); // Revoke it
+                passwordResetTokenRepository.save(token);
+                throw new BusinessException(ErrorCode.INVALID_TOKEN, "Too many failed attempts. The OTP has been revoked. Please request a new one.");
+            }
+            passwordResetTokenRepository.save(token);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "Invalid OTP.");
+        }
+
         token.setUsedAt(Instant.now());
         passwordResetTokenRepository.save(token);
     }
@@ -138,6 +154,13 @@ public class TokenService {
     @Transactional
     public void revokeAllRefreshTokensForUser(User user) {
         refreshTokenRepository.revokeAllByUser(user, Instant.now());
+    }
+
+    @Transactional
+    public void deleteAllTokensForUser(User user) {
+        verificationTokenRepository.deleteByUser(user);
+        passwordResetTokenRepository.deleteByUser(user);
+        refreshTokenRepository.deleteByUser(user);
     }
 
     @Transactional

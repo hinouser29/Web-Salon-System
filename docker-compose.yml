@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: spa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: spa_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - spa_pg_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: spa-backend
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: spa_management
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_SSL_MODE: disable
+      FRONTEND_URL: http://localhost:5173
+      JWT_SECRET: change-this-to-a-very-long-secret-key-at-least-256-bits-for-hs256
+      COOKIE_SECURE: "false"
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: spa-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  spa_pg_data:

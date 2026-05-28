@@ -11,7 +11,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -42,11 +41,12 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_AUTH_PATHS = {
             "/api/auth/register",
-            "/api/auth/verify",
+            "/api/auth/verify-otp",
             "/api/auth/resend-verification",
             "/api/auth/login",
             "/api/auth/logout",
             "/api/auth/forgot-password",
+            "/api/auth/verify-reset-otp",
             "/api/auth/reset-password",
             "/api/auth/refresh"
     };
@@ -70,7 +70,8 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**",
-            "/api-docs/**"
+            "/api-docs/**",
+            "/ws/**"
     };
 
     @Bean
@@ -86,8 +87,12 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_AUTH_PATHS).permitAll()
                         .requestMatchers(PUBLIC_WEB_PATHS).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/change-password").authenticated()
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers("/api/users/**").authenticated()
                         .requestMatchers(PUBLIC_RESOURCE_PATHS).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/services", "/api/services/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/branches", "/api/branches/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/technicians").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/dashboard", "/profile", "/logout").authenticated()
                         .requestMatchers(HttpMethod.POST, "/profile/**").authenticated()
@@ -96,27 +101,21 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2SuccessHandler)
                         .failureHandler(oAuth2FailureHandler))
-                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
+    public DaoAuthenticationProvider authenticationProvider(PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
+        provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }

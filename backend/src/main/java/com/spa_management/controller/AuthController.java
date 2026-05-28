@@ -18,9 +18,11 @@ import com.spa_management.dto.request.RefreshTokenRequest;
 import com.spa_management.dto.request.RegisterRequest;
 import com.spa_management.dto.request.ResendVerificationRequest;
 import com.spa_management.dto.request.ResetPasswordRequest;
+import com.spa_management.dto.request.VerifyOtpRequest;
 import com.spa_management.dto.response.ApiResponse;
 import com.spa_management.dto.response.AuthResponse;
 import com.spa_management.dto.response.UserProfileResponse;
+import com.spa_management.security.JwtCookieHelper;
 import com.spa_management.service.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtCookieHelper jwtCookieHelper;
 
     @PostMapping("/register")
     @Operation(summary = "Register a new local account")
@@ -46,10 +49,10 @@ public class AuthController {
                 profile));
     }
 
-    @GetMapping("/verify")
-    @Operation(summary = "Verify email with token from verification link")
-    public ResponseEntity<ApiResponse<String>> verifyEmail(@RequestParam String token) {
-        String message = authService.verifyEmail(token);
+    @PostMapping("/verify-otp")
+    @Operation(summary = "Verify account with OTP")
+    public ResponseEntity<ApiResponse<String>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        String message = authService.verifyOtp(request);
         return ResponseEntity.ok(ApiResponse.success(message, message));
     }
 
@@ -63,8 +66,12 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Login with email and password")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletResponse httpResponse) {
         AuthResponse response = authService.login(request);
+        // Write httpOnly cookies to support browser clients securely.
+        jwtCookieHelper.writeAuthCookies(httpResponse, response);
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 
@@ -72,10 +79,19 @@ public class AuthController {
     @Operation(summary = "Logout and revoke tokens")
     public ResponseEntity<ApiResponse<String>> logout(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
-            @RequestBody(required = false) LogoutRequest request) {
+            @RequestBody(required = false) LogoutRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            jakarta.servlet.http.HttpServletResponse httpResponse) {
         String accessToken = extractBearerToken(authorization);
+        if (accessToken == null) {
+            accessToken = jwtCookieHelper.resolveAccessToken(httpRequest);
+        }
         String refreshToken = request != null ? request.getRefreshToken() : null;
+        if (refreshToken == null) {
+            refreshToken = jwtCookieHelper.resolveRefreshToken(httpRequest);
+        }
         String message = authService.logout(accessToken, refreshToken);
+        jwtCookieHelper.clearAuthCookies(httpResponse);
         return ResponseEntity.ok(ApiResponse.success(message, message));
     }
 
@@ -84,6 +100,13 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request) {
         String message = authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(message, message));
+    }
+
+    @PostMapping("/verify-reset-otp")
+    @Operation(summary = "Verify password reset OTP before setting a new password")
+    public ResponseEntity<ApiResponse<String>> verifyResetOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        String message = authService.verifyPasswordResetOtp(request);
         return ResponseEntity.ok(ApiResponse.success(message, message));
     }
 
@@ -106,8 +129,15 @@ public class AuthController {
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token using refresh token")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(
-            @Valid @RequestBody RefreshTokenRequest request) {
-        AuthResponse response = authService.refresh(request.getRefreshToken());
+            @RequestBody(required = false) RefreshTokenRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            jakarta.servlet.http.HttpServletResponse httpResponse) {
+        String refreshToken = request != null ? request.getRefreshToken() : null;
+        if (refreshToken == null || refreshToken.isBlank()) {
+            refreshToken = jwtCookieHelper.resolveRefreshToken(httpRequest);
+        }
+        AuthResponse response = authService.refresh(refreshToken);
+        jwtCookieHelper.writeAuthCookies(httpResponse, response);
         return ResponseEntity.ok(ApiResponse.success("Token refreshed", response));
     }
 

@@ -106,13 +106,18 @@ public class WebAuthController {
     }
 
     @GetMapping("/verify-email")
-    public String verifyEmail(@RequestParam(required = false) String token, Model model) {
-        if (token == null || token.isBlank()) {
-            model.addAttribute("error", "Verification token is missing");
+    public String verifyEmailPage(Model model) {
+        model.addAttribute("verifyRequest", new com.spa_management.dto.request.VerifyOtpRequest());
+        return "verify-email";
+    }
+
+    @PostMapping("/verify-email")
+    public String verifyEmail(@Valid @ModelAttribute("verifyRequest") com.spa_management.dto.request.VerifyOtpRequest request, BindingResult bindingResult, Model model) {
+        if (bindingResult.hasErrors()) {
             return "verify-email";
         }
         try {
-            String message = authService.verifyEmail(token);
+            String message = authService.verifyOtp(request);
             model.addAttribute("message", message);
         } catch (BusinessException ex) {
             model.addAttribute("error", ex.getMessage());
@@ -156,7 +161,7 @@ public class WebAuthController {
 
     @GetMapping("/reset-password")
     public String resetPasswordPage(@RequestParam(required = false) String token, Model model) {
-        ResetPasswordRequest request = ResetPasswordRequest.builder().token(token).build();
+        ResetPasswordRequest request = ResetPasswordRequest.builder().otp(token).build();
         model.addAttribute("resetRequest", request);
         if (token == null || token.isBlank()) {
             model.addAttribute("error", "Reset token is missing");
@@ -171,7 +176,7 @@ public class WebAuthController {
             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("error", "Invalid reset password data");
-            return "redirect:/reset-password?token=" + request.getToken();
+            return "redirect:/reset-password?token=" + request.getOtp();
         }
         try {
             String message = authService.resetPassword(request);
@@ -179,7 +184,7 @@ public class WebAuthController {
             return "redirect:/login";
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            return "redirect:/reset-password?token=" + request.getToken();
+            return "redirect:/reset-password?token=" + request.getOtp();
         }
     }
 

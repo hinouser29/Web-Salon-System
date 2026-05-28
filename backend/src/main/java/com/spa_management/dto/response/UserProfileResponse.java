@@ -1,5 +1,7 @@
 package com.spa_management.dto.response;
 
+import java.util.UUID;
+
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -20,7 +22,7 @@ import lombok.Setter;
 @Builder
 public class UserProfileResponse {
 
-    private Long id;
+    private UUID id;
     private String email;
     private String fullName;
     private String phone;

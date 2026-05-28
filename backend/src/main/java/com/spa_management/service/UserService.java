@@ -1,5 +1,7 @@
 package com.spa_management.service;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -7,10 +9,12 @@ import org.springframework.web.multipart.MultipartFile;
 import com.spa_management.dto.request.UpdateProfileRequest;
 import com.spa_management.dto.response.UserProfileResponse;
 import com.spa_management.entity.User;
+import com.spa_management.entity.Customer;
 import com.spa_management.exception.BusinessException;
 import com.spa_management.exception.ErrorCode;
 import com.spa_management.mapper.UserMapper;
 import com.spa_management.repository.UserRepository;
+import com.spa_management.repository.CustomerRepository;
 import com.spa_management.util.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
@@ -20,12 +24,15 @@ import lombok.RequiredArgsConstructor;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final CustomerRepository customerRepository;
     private final UserMapper userMapper;
     private final FileStorageService fileStorageService;
 
     @Transactional(readOnly = true)
     public UserProfileResponse getCurrentProfile() {
-        return userMapper.toProfileResponse(getCurrentUserEntity());
+        User user = getCurrentUserEntity();
+        Customer customer = customerRepository.findByUserId(user.getId()).orElse(null);
+        return userMapper.toProfileResponse(user, customer);
     }
 
     @Transactional
@@ -38,17 +45,23 @@ public class UserService {
         if (request.getPhone() != null) {
             user.setPhone(request.getPhone());
         }
-        if (request.getAddress() != null) {
-            user.setAddress(request.getAddress());
-        }
-        if (request.getBirthday() != null) {
-            user.setBirthday(request.getBirthday());
-        }
-        if (request.getGender() != null) {
-            user.setGender(request.getGender());
+        user = userRepository.save(user);
+
+        Customer customer = customerRepository.findByUserId(user.getId()).orElse(null);
+        if (customer != null) {
+            if (request.getAddress() != null) {
+                customer.setAddress(request.getAddress());
+            }
+            if (request.getBirthday() != null) {
+                customer.setBirthday(request.getBirthday());
+            }
+            if (request.getGender() != null) {
+                customer.setGender(request.getGender().name());
+            }
+            customer = customerRepository.save(customer);
         }
 
-        return userMapper.toProfileResponse(userRepository.save(user));
+        return userMapper.toProfileResponse(user, customer);
     }
 
     @Transactional
@@ -59,18 +72,20 @@ public class UserService {
         user.setAvatarUrl(newAvatarUrl);
         User saved = userRepository.save(user);
         fileStorageService.deleteIfExists(previousAvatar);
-        return userMapper.toProfileResponse(saved);
+
+        Customer customer = customerRepository.findByUserId(saved.getId()).orElse(null);
+        return userMapper.toProfileResponse(saved, customer);
     }
 
     @Transactional(readOnly = true)
     public User getCurrentUserEntity() {
-        Long userId = SecurityUtils.getCurrentUserId();
+        UUID userId = SecurityUtils.getCurrentUserId();
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
-    public User getById(Long id) {
+    public User getById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }

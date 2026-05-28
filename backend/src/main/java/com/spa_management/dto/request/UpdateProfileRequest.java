@@ -2,6 +2,8 @@ package com.spa_management.dto.request;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import org.springframework.format.annotation.DateTimeFormat;
 import com.spa_management.entity.enums.Gender;
 
 import jakarta.validation.constraints.Size;
@@ -27,6 +29,8 @@ public class UpdateProfileRequest {
     @Size(max = 500, message = "Address must not exceed 500 characters")
     private String address;
 
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate birthday;
 
     private Gender gender;

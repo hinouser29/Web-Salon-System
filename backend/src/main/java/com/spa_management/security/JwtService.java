@@ -3,6 +3,7 @@ package com.spa_management.security;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
@@ -26,6 +27,7 @@ public class JwtService {
     public static final String CLAIM_USER_ID = "uid";
     public static final String CLAIM_EMAIL = "email";
     public static final String CLAIM_TYPE = "type";
+    public static final String CLAIM_PERM_VER = "perm_ver";
     public static final String TYPE_ACCESS = "access";
     public static final String TYPE_REFRESH = "refresh";
 
@@ -52,6 +54,7 @@ public class JwtService {
                 .claim(CLAIM_USER_ID, user.getId())
                 .claim(CLAIM_EMAIL, user.getEmail())
                 .claim(CLAIM_TYPE, type)
+                .claim(CLAIM_PERM_VER, user.getPermissionsVersion())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .signWith(getSigningKey())
@@ -91,9 +94,9 @@ public class JwtService {
         return parseClaims(token).get(CLAIM_TYPE, String.class);
     }
 
-    public Long getUserId(String token) {
-        Number uid = parseClaims(token).get(CLAIM_USER_ID, Number.class);
-        return uid != null ? uid.longValue() : null;
+    public UUID getUserId(String token) {
+        String uid = parseClaims(token).get(CLAIM_USER_ID, String.class);
+        return uid != null ? UUID.fromString(uid) : null;
     }
 
     public String getEmail(String token) {
@@ -102,6 +105,14 @@ public class JwtService {
 
     public String getJti(String token) {
         return parseClaims(token).getId();
+    }
+
+    /** Lấy permissions_version từ JWT claim */
+    public int getPermissionsVersion(String token) {
+        Object val = parseClaims(token).get(CLAIM_PERM_VER);
+        if (val instanceof Integer i) return i;
+        if (val instanceof Long l) return l.intValue();
+        return -1; // -1 = token cũ, không có claim này
     }
 
     public Instant getExpiration(String token) {

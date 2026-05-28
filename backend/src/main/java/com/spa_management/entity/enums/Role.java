@@ -1,8 +1,13 @@
 package com.spa_management.entity.enums;
 
 public enum Role {
-    USER,
+    CUSTOMER,
     ADMIN,
+    STAFF,
     MANAGER,
-    STAFF
+    RECEPTIONIST,
+    TECHNICIAN,
+    SUPER_ADMIN,
+    SUPPORT,
+    USER
 }

@@ -33,7 +33,7 @@ public class FileStorageService {
         Files.createDirectories(avatarStoragePath);
     }
 
-    public String storeAvatar(MultipartFile file, Long userId) {
+    public String storeAvatar(MultipartFile file, UUID userId) {
         validateAvatar(file);
 
         String extension = resolveExtension(file.getContentType());

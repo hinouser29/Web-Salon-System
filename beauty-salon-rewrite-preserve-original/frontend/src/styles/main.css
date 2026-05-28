@@ -1,0 +1,21 @@
+@import './global/variables.css';
+@import './global/reset.css';
+@import './global/base.css';
+@import './global/utilities.css';
+
+@import './components/buttons.css';
+@import './components/cards.css';
+@import './components/forms.css';
+@import './components/tables.css';
+
+@import './layouts/header.css';
+@import './layouts/footer.css';
+@import './layouts/customer-layout.css';
+
+@import './pages/home.css';
+@import './pages/auth.css';
+@import './pages/customer.css';
+@import './pages/services.css';
+@import './pages/simple-dashboard.css';
+
+@import './global/responsive.css';

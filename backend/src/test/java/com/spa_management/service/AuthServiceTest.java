@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,11 +28,16 @@ import com.spa_management.dto.response.AuthResponse;
 import com.spa_management.dto.response.UserProfileResponse;
 import com.spa_management.entity.User;
 import com.spa_management.entity.VerificationToken;
+import com.spa_management.entity.Customer;
 import com.spa_management.entity.enums.AuthProvider;
 import com.spa_management.entity.enums.Role;
+import com.spa_management.entity.enums.UserStatus;
 import com.spa_management.exception.BusinessException;
 import com.spa_management.exception.ErrorCode;
 import com.spa_management.mapper.UserMapper;
+import com.spa_management.repository.CustomerRepository;
+import com.spa_management.repository.RoleRepository;
+import com.spa_management.repository.UserRoleRepository;
 import com.spa_management.repository.UserRepository;
 import com.spa_management.security.JwtService;
 import com.spa_management.util.PasswordValidator;
@@ -41,6 +47,12 @@ class AuthServiceTest {
 
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private CustomerRepository customerRepository;
+    @Mock
+    private RoleRepository roleRepository;
+    @Mock
+    private UserRoleRepository userRoleRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
@@ -65,20 +77,21 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         localUser = User.builder()
-                .id(1L)
+                .id(UUID.randomUUID())
                 .email("user@example.com")
                 .password("encoded-password")
+                .fullName("Test User")
                 .provider(AuthProvider.LOCAL)
-                .role(Role.USER)
+                .role(Role.CUSTOMER)
                 .verified(true)
-                .active(true)
+                .status(UserStatus.ACTIVE)
                 .build();
 
         profileResponse = UserProfileResponse.builder()
-                .id(1L)
+                .id(localUser.getId())
                 .email("user@example.com")
                 .provider(AuthProvider.LOCAL)
-                .role(Role.USER)
+                .role(Role.CUSTOMER)
                 .isVerified(true)
                 .isActive(true)
                 .build();
@@ -96,12 +109,14 @@ class AuthServiceTest {
         when(passwordEncoder.encode("SecurePass1!")).thenReturn("hashed");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
-            user.setId(2L);
+            user.setId(UUID.randomUUID());
             return user;
         });
+        when(roleRepository.findByName("CUSTOMER")).thenReturn(Optional.empty());
+        when(customerRepository.save(any(Customer.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(tokenService.createVerificationToken(any(User.class)))
                 .thenReturn(VerificationToken.builder().token("verify-token").build());
-        when(userMapper.toProfileResponse(any(User.class))).thenReturn(profileResponse);
+        when(userMapper.toProfileResponse(any(User.class), any(Customer.class))).thenReturn(profileResponse);
 
         UserProfileResponse result = authService.register(request);
 
@@ -144,7 +159,8 @@ class AuthServiceTest {
         when(jwtService.generateAccessToken(localUser)).thenReturn("access");
         when(jwtService.generateRefreshToken(localUser)).thenReturn("refresh");
         when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(3600L);
-        when(userMapper.toProfileResponse(localUser)).thenReturn(profileResponse);
+        when(customerRepository.findByUserId(localUser.getId())).thenReturn(Optional.empty());
+        when(userMapper.toProfileResponse(localUser, null)).thenReturn(profileResponse);
 
         AuthResponse response = authService.login(request);
 

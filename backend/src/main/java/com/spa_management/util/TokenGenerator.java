@@ -21,4 +21,9 @@ public class TokenGenerator {
     public String generateJti() {
         return UUID.randomUUID().toString().replace("-", "");
     }
+
+    public String generateOtp() {
+        int otp = 100000 + SECURE_RANDOM.nextInt(900000);
+        return String.valueOf(otp);
+    }
 }

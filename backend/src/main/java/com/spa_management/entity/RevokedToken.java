@@ -1,5 +1,7 @@
 package com.spa_management.entity;
 
+import java.util.UUID;
+
 import java.time.Instant;
 
 import jakarta.persistence.Column;
@@ -25,8 +27,8 @@ import lombok.Setter;
 public class RevokedToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(name = "jti", nullable = false, unique = true, length = 64)
     private String jti;

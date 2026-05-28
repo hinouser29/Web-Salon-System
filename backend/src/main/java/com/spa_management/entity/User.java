@@ -1,19 +1,24 @@
 package com.spa_management.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.time.Instant;
-import java.time.LocalDate;
 
 import com.spa_management.entity.enums.AuthProvider;
-import com.spa_management.entity.enums.Gender;
 import com.spa_management.entity.enums.Role;
+import com.spa_management.entity.enums.UserStatus;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -36,8 +41,8 @@ import lombok.Setter;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(nullable = false, length = 255)
     private String email;
@@ -45,20 +50,11 @@ public class User {
     @Column(length = 255)
     private String password;
 
-    @Column(name = "full_name", length = 150)
+    @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
 
     @Column(length = 20)
     private String phone;
-
-    @Column(length = 500)
-    private String address;
-
-    private LocalDate birthday;
-
-    @Enumerated(EnumType.STRING)
-    @Column(length = 30)
-    private Gender gender;
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
@@ -71,18 +67,38 @@ public class User {
     @Builder.Default
     private AuthProvider provider = AuthProvider.LOCAL;
 
+    /** Giữ lại để backward compatibility — dùng userRoles cho RBAC */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     @Builder.Default
-    private Role role = Role.USER;
+    private Role role = Role.CUSTOMER;
+
+    /** RBAC: danh sách roles được gán qua bảng user_roles */
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY,
+               cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<UserRole> userRoles = new ArrayList<>();
+
+    /** Tăng lên mỗi khi role/permission bị thay đổi để invalidate JWT cache */
+    @Column(name = "permissions_version", nullable = false)
+    @Builder.Default
+    private int permissionsVersion = 0;
+
+    @Column(name = "failed_login_attempts", nullable = false)
+    @Builder.Default
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private Instant lockedUntil;
 
     @Column(name = "is_verified", nullable = false)
     @Builder.Default
     private boolean verified = false;
 
-    @Column(name = "is_active", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
     @Builder.Default
-    private boolean active = true;
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

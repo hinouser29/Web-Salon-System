@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.spa_management.entity.enums.Gender;
 
 @Getter
 @Setter
@@ -25,6 +28,21 @@ public class RegisterRequest {
     @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
     private String password;
 
+    @NotBlank(message = "Full name is required")
     @Size(max = 150, message = "Full name must not exceed 150 characters")
     private String fullName;
+
+    @Size(max = 20, message = "Phone must not exceed 20 characters")
+    private String phone;
+
+    private Gender gender;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private java.time.LocalDate dateOfBirth;
+
+    private String address;
+
+    @NotBlank(message = "Role is required")
+    private String role;
 }

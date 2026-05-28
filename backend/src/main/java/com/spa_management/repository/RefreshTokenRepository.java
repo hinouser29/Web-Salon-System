@@ -1,5 +1,7 @@
 package com.spa_management.repository;
 
+import java.util.UUID;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -13,7 +15,7 @@ import com.spa_management.entity.RefreshToken;
 import com.spa_management.entity.User;
 
 @Repository
-public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
+public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
 
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
@@ -21,7 +23,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     @Modifying
     @Query("UPDATE RefreshToken r SET r.revokedAt = :revokedAt WHERE r.user = :user AND r.revokedAt IS NULL")
-    int revokeAllByUser(User user, Instant revokedAt);
+    void revokeAllByUser(User user, Instant revokedAt);
+
+    void deleteByUser(User user);
 
     @Modifying
     @Query("DELETE FROM RefreshToken r WHERE r.expiresAt < :cutoff OR r.revokedAt < :cutoff")

@@ -1,0 +1,609 @@
+-- =====================================================
+-- SPA / NAIL / HAIR SALON MANAGEMENT SYSTEM
+-- PostgreSQL / Supabase
+-- =====================================================
+
+-- =====================================================
+-- EXTENSIONS
+-- =====================================================
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- =====================================================
+-- ENUMS
+-- =====================================================
+
+CREATE TYPE user_provider AS ENUM ('LOCAL', 'GOOGLE');
+
+CREATE TYPE user_status AS ENUM (
+    'ACTIVE',
+    'INACTIVE',
+    'BANNED'
+);
+
+CREATE TYPE gender_type AS ENUM (
+    'MALE',
+    'FEMALE',
+    'OTHER'
+);
+
+CREATE TYPE appointment_status AS ENUM (
+    'PENDING',
+    'CONFIRMED',
+    'CHECKED_IN',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'CANCELLED',
+    'NO_SHOW'
+);
+
+CREATE TYPE payment_status AS ENUM (
+    'PENDING',
+    'PAID',
+    'FAILED',
+    'REFUNDED'
+);
+
+CREATE TYPE payment_method AS ENUM (
+    'CASH',
+    'CARD',
+    'BANKING',
+    'MOMO',
+    'VNPAY'
+);
+
+CREATE TYPE resource_type AS ENUM (
+    'ROOM',
+    'BED',
+    'CHAIR'
+);
+
+CREATE TYPE notification_type AS ENUM (
+    'EMAIL',
+    'SYSTEM'
+);
+
+-- =====================================================
+-- ROLES
+-- =====================================================
+
+CREATE TABLE roles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(50) UNIQUE NOT NULL
+);
+
+INSERT INTO roles(name)
+VALUES
+('ADMIN'),
+('MANAGER'),
+('RECEPTIONIST'),
+('TECHNICIAN'),
+('CUSTOMER');
+
+-- =====================================================
+-- USERS
+-- =====================================================
+
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT,
+
+    full_name VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+
+    avatar_url TEXT,
+
+    provider user_provider DEFAULT 'LOCAL',
+    google_id TEXT,
+
+    is_verified BOOLEAN DEFAULT FALSE,
+
+    status user_status DEFAULT 'ACTIVE',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- USER ROLES
+-- =====================================================
+
+CREATE TABLE user_roles (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
+
+    PRIMARY KEY(user_id, role_id)
+);
+
+-- =====================================================
+-- EMAIL VERIFICATION TOKENS
+-- =====================================================
+
+CREATE TABLE verification_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+
+    token TEXT NOT NULL UNIQUE,
+
+    expired_at TIMESTAMP NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- PASSWORD RESET TOKENS
+-- =====================================================
+
+CREATE TABLE password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+
+    token TEXT NOT NULL UNIQUE,
+
+    expired_at TIMESTAMP NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- BRANCHES
+-- =====================================================
+
+CREATE TABLE branches (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    name VARCHAR(255) NOT NULL,
+
+    address TEXT NOT NULL,
+
+    phone VARCHAR(20),
+
+    open_time TIME,
+    close_time TIME,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- MEMBERSHIP LEVELS
+-- =====================================================
+
+CREATE TABLE membership_levels (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    name VARCHAR(100) NOT NULL UNIQUE,
+
+    min_points INTEGER DEFAULT 0,
+
+    discount_percent NUMERIC(5,2) DEFAULT 0,
+
+    benefits TEXT
+);
+
+-- =====================================================
+-- CUSTOMERS
+-- =====================================================
+
+CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+
+    gender gender_type,
+
+    birthday DATE,
+
+    address TEXT,
+
+    loyalty_points INTEGER DEFAULT 0,
+
+    membership_level_id UUID REFERENCES membership_levels(id),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- EMPLOYEES
+-- =====================================================
+
+CREATE TABLE employees (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+
+    branch_id UUID REFERENCES branches(id),
+
+    position VARCHAR(100),
+
+    specialization TEXT,
+
+    salary NUMERIC(12,2),
+
+    commission_rate NUMERIC(5,2),
+
+    hire_date DATE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- WORK SHIFTS
+-- =====================================================
+
+CREATE TABLE work_shifts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+
+    shift_date DATE NOT NULL,
+
+    start_time TIME NOT NULL,
+
+    end_time TIME NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- SERVICE CATEGORIES
+-- =====================================================
+
+CREATE TABLE service_categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    name VARCHAR(255) NOT NULL UNIQUE,
+
+    description TEXT
+);
+
+-- =====================================================
+-- SERVICES
+-- =====================================================
+
+CREATE TABLE services (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    category_id UUID REFERENCES service_categories(id),
+
+    name VARCHAR(255) NOT NULL,
+
+    description TEXT,
+
+    duration_minutes INTEGER NOT NULL,
+
+    price NUMERIC(12,2) NOT NULL,
+
+    image_url TEXT,
+
+    is_active BOOLEAN DEFAULT TRUE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- BRANCH SERVICES
+-- =====================================================
+
+CREATE TABLE branch_services (
+    branch_id UUID REFERENCES branches(id) ON DELETE CASCADE,
+
+    service_id UUID REFERENCES services(id) ON DELETE CASCADE,
+
+    PRIMARY KEY(branch_id, service_id)
+);
+
+-- =====================================================
+-- SERVICE RESOURCES
+-- =====================================================
+
+CREATE TABLE service_resources (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    branch_id UUID REFERENCES branches(id),
+
+    resource_name VARCHAR(255),
+
+    resource_type resource_type,
+
+    is_available BOOLEAN DEFAULT TRUE
+);
+
+-- =====================================================
+-- APPOINTMENTS
+-- =====================================================
+
+CREATE TABLE appointments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    customer_id UUID REFERENCES customers(id),
+
+    branch_id UUID REFERENCES branches(id),
+
+    booked_by UUID REFERENCES users(id),
+
+    appointment_date DATE NOT NULL,
+
+    start_time TIME NOT NULL,
+
+    end_time TIME NOT NULL,
+
+    status appointment_status DEFAULT 'PENDING',
+
+    notes TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- APPOINTMENT SERVICES
+-- =====================================================
+
+CREATE TABLE appointment_services (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    appointment_id UUID REFERENCES appointments(id) ON DELETE CASCADE,
+
+    service_id UUID REFERENCES services(id),
+
+    technician_id UUID REFERENCES employees(id),
+
+    resource_id UUID REFERENCES service_resources(id),
+
+    price NUMERIC(12,2),
+
+    status appointment_status DEFAULT 'PENDING'
+);
+
+-- =====================================================
+-- WAITING LIST
+-- =====================================================
+
+CREATE TABLE waiting_list (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    customer_id UUID REFERENCES customers(id),
+
+    branch_id UUID REFERENCES branches(id),
+
+    desired_date DATE,
+
+    notes TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- PROMOTIONS
+-- =====================================================
+
+CREATE TABLE promotions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    title VARCHAR(255) NOT NULL,
+
+    description TEXT,
+
+    discount_percent NUMERIC(5,2),
+
+    start_date DATE,
+
+    end_date DATE,
+
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- =====================================================
+-- PACKAGES / COMBOS
+-- =====================================================
+
+CREATE TABLE packages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    name VARCHAR(255) NOT NULL,
+
+    description TEXT,
+
+    price NUMERIC(12,2),
+
+    validity_days INTEGER,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE package_services (
+    package_id UUID REFERENCES packages(id) ON DELETE CASCADE,
+
+    service_id UUID REFERENCES services(id) ON DELETE CASCADE,
+
+    PRIMARY KEY(package_id, service_id)
+);
+
+CREATE TABLE customer_packages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    customer_id UUID REFERENCES customers(id),
+
+    package_id UUID REFERENCES packages(id),
+
+    remaining_sessions INTEGER,
+
+    expired_at DATE
+);
+
+-- =====================================================
+-- INVOICES
+-- =====================================================
+
+CREATE TABLE invoices (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    appointment_id UUID REFERENCES appointments(id),
+
+    customer_id UUID REFERENCES customers(id),
+
+    subtotal NUMERIC(12,2),
+
+    discount_amount NUMERIC(12,2),
+
+    total_amount NUMERIC(12,2),
+
+    payment_status payment_status DEFAULT 'PENDING',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- PAYMENTS
+-- =====================================================
+
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    invoice_id UUID REFERENCES invoices(id),
+
+    amount NUMERIC(12,2),
+
+    payment_method payment_method,
+
+    transaction_code TEXT,
+
+    payment_status payment_status DEFAULT 'PENDING',
+
+    paid_at TIMESTAMP
+);
+
+-- =====================================================
+-- REFUNDS
+-- =====================================================
+
+CREATE TABLE refunds (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    payment_id UUID REFERENCES payments(id),
+
+    amount NUMERIC(12,2),
+
+    reason TEXT,
+
+    refunded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- FEEDBACKS
+-- =====================================================
+
+CREATE TABLE feedbacks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    customer_id UUID REFERENCES customers(id),
+
+    appointment_id UUID REFERENCES appointments(id),
+
+    rating INTEGER CHECK(rating >= 1 AND rating <= 5),
+
+    comment TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- NOTIFICATIONS
+-- =====================================================
+
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+
+    title VARCHAR(255),
+
+    message TEXT,
+
+    type notification_type,
+
+    is_read BOOLEAN DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- SYSTEM LOGS
+-- =====================================================
+
+CREATE TABLE system_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    user_id UUID REFERENCES users(id),
+
+    action VARCHAR(255),
+
+    description TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- AI RECOMMENDATIONS
+-- =====================================================
+
+CREATE TABLE ai_recommendations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    customer_id UUID REFERENCES customers(id),
+
+    recommended_service_id UUID REFERENCES services(id),
+
+    reason TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- AI CHAT LOGS
+-- =====================================================
+
+CREATE TABLE ai_chat_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    user_id UUID REFERENCES users(id),
+
+    message TEXT,
+
+    response TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- INDEXES
+-- =====================================================
+
+CREATE INDEX idx_users_email ON users(email);
+
+CREATE INDEX idx_appointments_date
+ON appointments(appointment_date);
+
+CREATE INDEX idx_payments_invoice
+ON payments(invoice_id);
+
+CREATE INDEX idx_notifications_user
+ON notifications(user_id);
+
+-- =====================================================
+-- SAMPLE MEMBERSHIP DATA
+-- =====================================================
+
+INSERT INTO membership_levels(
+    name,
+    min_points,
+    discount_percent,
+    benefits
+)
+VALUES
+('Silver', 0, 5, 'Basic membership'),
+('Gold', 1000, 10, 'Priority booking'),
+('Platinum', 5000, 15, 'VIP benefits');

@@ -1,13 +1,13 @@
 package com.spa_management.security;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
-
 import com.spa_management.config.AppProperties;
 import com.spa_management.dto.response.AuthResponse;
 import com.spa_management.entity.User;
@@ -25,6 +25,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final AuthService authService;
     private final UserRepository userRepository;
     private final AppProperties appProperties;
+    private final JwtCookieHelper jwtCookieHelper;
 
     @Override
     public void onAuthenticationSuccess(
@@ -39,14 +40,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .orElseThrow(() -> new IOException("OAuth user not found after authentication"));
 
         AuthResponse tokens = authService.buildAuthResponse(user);
+        jwtCookieHelper.writeAuthCookies(response, tokens);
 
-        String redirectUrl = UriComponentsBuilder.fromUriString(appProperties.getOauth2().getRedirectUri())
-                .queryParam("accessToken", tokens.getAccessToken())
-                .queryParam("refreshToken", tokens.getRefreshToken())
-                .queryParam("tokenType", tokens.getTokenType())
-                .queryParam("expiresIn", tokens.getExpiresIn())
-                .build()
-                .toUriString();
+        String frontendBase = appProperties.getFrontendUrl().replaceAll("/$", "");
+        String fragment = "accessToken=" + URLEncoder.encode(tokens.getAccessToken(), StandardCharsets.UTF_8)
+                + "&refreshToken=" + URLEncoder.encode(tokens.getRefreshToken(), StandardCharsets.UTF_8)
+                + "&tokenType=" + URLEncoder.encode(tokens.getTokenType(), StandardCharsets.UTF_8);
+        String redirectUrl = frontendBase + "/oauth/callback#" + fragment;
 
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }

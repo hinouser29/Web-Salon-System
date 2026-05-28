@@ -13,6 +13,7 @@ import lombok.Setter;
 public class AppProperties {
 
     private Jwt jwt = new Jwt();
+    private int otpExpirationMinutes = 5;
     private int verificationTokenExpirationHours = 24;
     private int passwordResetTokenExpirationHours = 1;
     private String frontendUrl = "http://localhost:8080";
@@ -31,7 +32,7 @@ public class AppProperties {
     @Getter
     @Setter
     public static class OAuth2 {
-        private String redirectUri = "http://localhost:8080/oauth/callback";
+        private String redirectUri = "http://localhost:5173/oauth/callback";
     }
 
     @Getter
