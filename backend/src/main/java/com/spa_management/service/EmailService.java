@@ -52,6 +52,59 @@ public class EmailService {
         sendHtmlMail(toEmail, subject, body);
     }
 
+    @Async("emailTaskExecutor")
+    public void sendAppointmentConfirmation(String toEmail, String customerName, String serviceName, String date, String time) {
+        String subject = "Xac nhan dat lich thanh cong - Web Salon";
+        String body = """
+                <html><body style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                <h2 style='color: #c0396b;'>Xin chao %s,</h2>
+                <p>Cam on ban da dat lich tai Web Salon. Lich hen cua ban da duoc xac nhan voi thong tin sau:</p>
+                <div style='background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;'>
+                    <p><strong>Dich vu:</strong> %s</p>
+                    <p><strong>Ngay:</strong> %s</p>
+                    <p><strong>Gio:</strong> %s</p>
+                </div>
+                <p>Chung toi rat mong duoc don tiep ban!</p>
+                <br><p>Tran trong,<br><strong>Web Salon Team</strong></p>
+                </body></html>
+                """.formatted(customerName, serviceName, date, time);
+        sendHtmlMail(toEmail, subject, body);
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendAppointmentReminder(String toEmail, String customerName, String serviceName, String date, String time) {
+        String subject = "Nhac nho lich hen sap toi - Web Salon";
+        String body = """
+                <html><body style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                <h2 style='color: #c0396b;'>Xin chao %s,</h2>
+                <p>Web Salon xin nhac ban co mot lich hen sap toi trong vong 24 gio nua:</p>
+                <div style='background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;'>
+                    <p><strong>Dich vu:</strong> %s</p>
+                    <p><strong>Ngay:</strong> %s</p>
+                    <p><strong>Gio:</strong> %s</p>
+                </div>
+                <p>Neu ban can thay doi lich, vui long lien he voi chung toi hoac dang nhap vao he thong de huy/doi lich.</p>
+                <br><p>Tran trong,<br><strong>Web Salon Team</strong></p>
+                </body></html>
+                """.formatted(customerName, serviceName, date, time);
+        sendHtmlMail(toEmail, subject, body);
+    }
+
+    @Async("emailTaskExecutor")
+    public void sendAppointmentThankYou(String toEmail, String customerName) {
+        String subject = "Cam on ban da su dung dich vu - Web Salon";
+        String body = """
+                <html><body style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                <h2 style='color: #c0396b;'>Xin chao %s,</h2>
+                <p>Cam on ban da su dung dich vu tai Web Salon hom nay!</p>
+                <p>Chung toi hy vong ban da co nhung giay phut thu gian va hai long voi dich vu. Neu co the, vui long de lai danh gia de chung toi ngay cang hoan thien hon.</p>
+                <p>Hen gap lai ban lan sau!</p>
+                <br><p>Tran trong,<br><strong>Web Salon Team</strong></p>
+                </body></html>
+                """.formatted(customerName);
+        sendHtmlMail(toEmail, subject, body);
+    }
+
     private void sendHtmlMail(String to, String subject, String htmlContent) {
         try {
             MimeMessage message = mailSender.createMimeMessage();

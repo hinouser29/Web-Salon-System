@@ -29,7 +29,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "invoices")
+@Table(name = "invoices", indexes = {
+    @jakarta.persistence.Index(name = "idx_invoice_created", columnList = "created_at"),
+    @jakarta.persistence.Index(name = "idx_invoice_status", columnList = "payment_status")
+})
 @Getter
 @Setter
 @NoArgsConstructor

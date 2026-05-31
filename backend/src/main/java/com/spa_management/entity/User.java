@@ -32,6 +32,9 @@ import lombok.Setter;
 @Entity
 @Table(name = "users", uniqueConstraints = {
         @UniqueConstraint(name = "uk_users_email", columnNames = "email")
+}, indexes = {
+        @jakarta.persistence.Index(name = "idx_users_email", columnList = "email"),
+        @jakarta.persistence.Index(name = "idx_users_role", columnList = "role")
 })
 @Getter
 @Setter

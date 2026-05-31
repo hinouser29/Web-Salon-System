@@ -18,6 +18,8 @@ import com.spa_management.repository.SalonServiceRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.cache.annotation.Cacheable;
+
 @Service
 @RequiredArgsConstructor
 public class CatalogService {
@@ -28,6 +30,7 @@ public class CatalogService {
     private final SalonMapper salonMapper;
 
     @Transactional(readOnly = true)
+    @Cacheable("services")
     public List<ServiceResponse> listActiveServices() {
         return salonServiceRepository.findAllActiveWithCategory().stream()
                 .map(salonMapper::toServiceResponse)
@@ -42,6 +45,7 @@ public class CatalogService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable("branches")
     public List<BranchResponse> listBranches() {
         return branchRepository.findAll().stream()
                 .map(salonMapper::toBranchResponse)
@@ -49,6 +53,7 @@ public class CatalogService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "technicians", key = "#branchId != null ? #branchId : 'all'")
     public List<TechnicianResponse> listTechnicians(UUID branchId) {
         return employeeRepository.findTechniciansByBranch(branchId).stream()
                 .map(salonMapper::toTechnicianResponse)

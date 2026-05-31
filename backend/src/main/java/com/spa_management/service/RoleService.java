@@ -33,6 +33,7 @@ public class RoleService {
     private final RolePermissionRepository rolePermissionRepository;
     private final UserRoleRepository userRoleRepository;
     private final UserRepository userRepository;
+    private final SystemLogService systemLogService;
 
     @Transactional(readOnly = true)
     public List<RoleResponse> getAllRoles() {
@@ -68,6 +69,7 @@ public class RoleService {
 
         role = roleRepository.save(role);
         log.info("Created new role: {}", role.getName());
+        systemLogService.logAction("CREATE_ROLE", "Tạo nhóm quyền mới: " + role.getName());
         return toResponse(role);
     }
 
@@ -82,6 +84,7 @@ public class RoleService {
         role.setDescription(request.getDescription());
         role = roleRepository.save(role);
         log.info("Updated role: {}", role.getName());
+        systemLogService.logAction("UPDATE_ROLE", "Cập nhật nhóm quyền: " + role.getName());
         return toResponse(role);
     }
 
@@ -93,6 +96,7 @@ public class RoleService {
         }
         roleRepository.delete(role);
         log.info("Deleted role: {}", role.getName());
+        systemLogService.logAction("DELETE_ROLE", "Xóa nhóm quyền: " + role.getName());
     }
 
     // ==================== Role-Permission Assignment ====================
@@ -127,6 +131,7 @@ public class RoleService {
         incrementPermissionsVersionForRole(roleId);
 
         log.info("Assigned {} permissions to role {}", permissionIds.size(), role.getName());
+        systemLogService.logAction("ASSIGN_PERMISSION", "Gán " + permissionIds.size() + " quyền cho nhóm: " + role.getName());
         return getRoleById(roleId);
     }
 
@@ -139,6 +144,7 @@ public class RoleService {
         incrementPermissionsVersionForRole(roleId);
 
         log.info("Revoked permission {} from role {}", permissionId, roleId);
+        systemLogService.logAction("REVOKE_PERMISSION", "Thu hồi quyền khỏi nhóm có ID: " + roleId);
     }
 
     // ==================== Helpers ====================

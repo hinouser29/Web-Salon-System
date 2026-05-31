@@ -41,12 +41,32 @@ public class InvoiceController {
 
     @PostMapping("/{id}/pay")
     @PreAuthorize("hasAuthority('PERM_INVOICE_READ_OWN') or hasAnyRole('CUSTOMER', 'USER')")
-    @Operation(summary = "Pay an invoice (mock gateway)")
+    @Operation(summary = "Pay an invoice (customer self-pay)")
     public ResponseEntity<ApiResponse<InvoiceResponse>> pay(
             @PathVariable UUID id,
             @Valid @RequestBody PayInvoiceRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 "Payment successful",
                 invoicePaymentService.payInvoice(id, request)));
+    }
+
+    @PostMapping("/{id}/staff-pay")
+    @PreAuthorize("hasAuthority('PERM_INVOICE_PAY')")
+    @Operation(summary = "Staff-assisted payment on behalf of customer")
+    public ResponseEntity<ApiResponse<InvoiceResponse>> staffPay(
+            @PathVariable UUID id,
+            @Valid @RequestBody PayInvoiceRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Staff payment processed successfully",
+                invoicePaymentService.staffPayInvoice(id, request)));
+    }
+
+    @GetMapping("/by-appointment/{appointmentId}")
+    @PreAuthorize("hasAuthority('PERM_INVOICE_PAY') or hasAuthority('PERM_APPOINTMENT_UPDATE_ALL')")
+    @Operation(summary = "Get invoice for a specific appointment")
+    public ResponseEntity<ApiResponse<InvoiceResponse>> getByAppointment(
+            @PathVariable UUID appointmentId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                invoicePaymentService.getInvoiceByAppointment(appointmentId)));
     }
 }

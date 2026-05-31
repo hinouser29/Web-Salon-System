@@ -14,12 +14,20 @@ public class SupabaseProperties {
 
     private String url;
     private String anonKey;
+    private String serviceRoleKey; // Dùng cho Admin operations như upload bypass RLS
     private Realtime realtime = new Realtime();
+    private Storage storage = new Storage();
 
     @Getter
     @Setter
     public static class Realtime {
         private List<String> tables = List.of("appointments", "notifications");
+    }
+
+    @Getter
+    @Setter
+    public static class Storage {
+        private String avatarBucket = "avatars";
     }
 
     /**

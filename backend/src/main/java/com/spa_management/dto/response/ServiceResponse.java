@@ -23,4 +23,5 @@ public class ServiceResponse {
     private BigDecimal price;
     private String imageUrl;
     private String categoryName;
+    private Boolean active;
 }

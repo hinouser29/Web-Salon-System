@@ -1,18 +1,15 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getServices } from "../../api/salonApi";
+import { useQuery } from "@tanstack/react-query";
 import { resolveFileUrl } from "../../api/axiosClient";
+import { getActiveServices } from "../../api/servicesApi";
 
 export default function ServiceList() {
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['services'],
+    queryFn: getActiveServices,
+  });
+  const services = data?.data?.data || [];
 
-  useEffect(() => {
-    getServices()
-      .then((res) => setServices(res.data?.data || []))
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
 
   return (
     <section className="section container">

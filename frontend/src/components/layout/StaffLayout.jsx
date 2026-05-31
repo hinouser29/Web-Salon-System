@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import GuestLayout from './GuestLayout';
 import { useAuth } from '../../context/AuthContext';
 import { LayoutDashboard, CalendarCheck, Clock, Bell, Menu, X, LogOut, Users } from 'lucide-react';
+import NotificationBell from '../NotificationBell';
 
 export default function StaffLayout({ children }) {
   const navigate = useNavigate();
@@ -64,7 +65,12 @@ export default function StaffLayout({ children }) {
         </aside>
         
         <main className="dashboard-main">
-          {children}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 24px', borderBottom: '1px solid var(--border)', background: '#fff' }}>
+            <NotificationBell />
+          </div>
+          <div style={{ padding: '24px' }}>
+            {children}
+          </div>
         </main>
       </div>
     </GuestLayout>

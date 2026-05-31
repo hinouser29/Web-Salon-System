@@ -64,7 +64,19 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
             @Param("endTime") LocalTime endTime,
             @Param("excludeAppointmentId") UUID excludeAppointmentId);
 
-    List<Appointment> findByStatusInOrderByAppointmentDateDescStartTimeDesc(List<AppointmentStatus> statuses);
+    @Query("""
+            SELECT DISTINCT a FROM Appointment a
+            JOIN FETCH a.customer c
+            JOIN FETCH c.user
+            LEFT JOIN FETCH a.branch
+            LEFT JOIN FETCH a.serviceLines sl
+            LEFT JOIN FETCH sl.service
+            LEFT JOIN FETCH sl.technician t
+            LEFT JOIN FETCH t.user
+            WHERE a.status IN :statuses
+            ORDER BY a.appointmentDate DESC, a.startTime DESC
+            """)
+    List<Appointment> findByStatusInOrderByAppointmentDateDescStartTimeDesc(@Param("statuses") List<AppointmentStatus> statuses);
 
     @Query("""
             SELECT DISTINCT a FROM Appointment a
@@ -78,4 +90,26 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
             ORDER BY a.appointmentDate DESC, a.startTime DESC
             """)
     List<Appointment> findAllWithDetails();
+
+    @Query("""
+            SELECT COUNT(DISTINCT a) FROM Appointment a
+            JOIN a.serviceLines sl
+            WHERE sl.technician.id = :technicianId
+              AND a.status = 'COMPLETED'
+              AND a.appointmentDate = :date
+            """)
+    int countCompletedByTechnicianOnDate(@Param("technicianId") UUID technicianId, @Param("date") LocalDate date);
+
+    @Query("""
+            SELECT COUNT(DISTINCT a) FROM Appointment a
+            JOIN a.serviceLines sl
+            WHERE sl.technician.id = :technicianId
+              AND a.status = 'COMPLETED'
+              AND a.appointmentDate >= :startDate
+              AND a.appointmentDate <= :endDate
+            """)
+    int countCompletedByTechnicianBetweenDates(@Param("technicianId") UUID technicianId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT COUNT(a) FROM Appointment a WHERE a.appointmentDate = :date")
+    long countByAppointmentDate(@Param("date") LocalDate date);
 }

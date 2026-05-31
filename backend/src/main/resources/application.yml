@@ -22,7 +22,8 @@ spring:
       hibernate:
         format_sql: true
         jdbc:
-          time_zone: UTC
+          # time_zone: UTC
+
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -78,8 +79,11 @@ app:
 supabase:
   url: ${SUPABASE_URL:}
   anon-key: ${SUPABASE_ANON_KEY:}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
   realtime:
     tables: ${SUPABASE_REALTIME_TABLES:appointments,notifications}
+  storage:
+    avatar-bucket: ${SUPABASE_AVATAR_BUCKET:avatars}
 
 springdoc:
   swagger-ui:

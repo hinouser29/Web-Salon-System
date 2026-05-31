@@ -24,4 +24,17 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
             ORDER BY i.createdAt DESC
             """)
     List<Invoice> findByCustomerIdWithPayments(@Param("customerId") UUID customerId);
+
+    @Query("SELECT SUM(i.totalAmount) FROM Invoice i WHERE i.paymentStatus = 'PAID' AND i.createdAt >= :startDate AND i.createdAt <= :endDate")
+    java.math.BigDecimal sumPaidRevenueBetween(@Param("startDate") java.time.Instant startDate, @Param("endDate") java.time.Instant endDate);
+
+    @Query("SELECT SUM(i.totalAmount) FROM Invoice i WHERE i.paymentStatus = 'PAID' AND i.createdAt >= :startDate")
+    java.math.BigDecimal sumPaidRevenueSince(@Param("startDate") java.time.Instant startDate);
+
+    @Query("""
+            SELECT i FROM Invoice i
+            LEFT JOIN FETCH i.payments
+            WHERE i.appointment.id = :appointmentId
+            """)
+    java.util.Optional<Invoice> findByAppointmentIdWithPayments(@Param("appointmentId") UUID appointmentId);
 }

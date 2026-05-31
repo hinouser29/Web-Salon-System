@@ -30,7 +30,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "appointments")
+@Table(name = "appointments", indexes = {
+    @jakarta.persistence.Index(name = "idx_appt_date", columnList = "appointment_date"),
+    @jakarta.persistence.Index(name = "idx_appt_status", columnList = "status")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -41,6 +44,9 @@ public class Appointment {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @jakarta.persistence.Version
+    private Integer version;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)

@@ -63,4 +63,9 @@ public class Employee {
     void onCreate() {
         createdAt = Instant.now();
     }
+
+    // Convenience helper for security checks
+    public UUID getUserId() {
+        return user != null ? user.getId() : null;
+    }
 }

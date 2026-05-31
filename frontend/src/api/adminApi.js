@@ -25,3 +25,32 @@ export const getUserRoles = (userId) => axiosClient.get(`/admin/users/${userId}/
 export const assignUserRole = (userId, data) => axiosClient.post(`/admin/users/${userId}/roles`, data);
 export const revokeUserRole = (userId, roleId) =>
   axiosClient.delete(`/admin/users/${userId}/roles/${roleId}`);
+
+// ==================== Services ====================
+export const getAdminServices = () => axiosClient.get('/admin/services');
+export const createAdminService = (data) => axiosClient.post('/admin/services', data);
+export const updateAdminService = (id, data) => axiosClient.put(`/admin/services/${id}`, data);
+export const deleteAdminService = (id) => axiosClient.delete(`/admin/services/${id}`);
+
+// ==================== Employees ====================
+export const getAdminEmployees = () => axiosClient.get('/admin/employees');
+export const createAdminEmployee = (data) => axiosClient.post('/admin/employees', data);
+export const updateAdminEmployee = (id, data) => axiosClient.put(`/admin/employees/${id}`, data);
+export const deleteAdminEmployee = (id) => axiosClient.delete(`/admin/employees/${id}`);
+
+// ==================== Customers ====================
+export const getAdminCustomers = () => axiosClient.get('/admin/customers');
+
+// ==================== Dashboard ====================
+export const getAdminDashboardStats = () => axiosClient.get('/admin/dashboard/stats');
+
+// ==================== Reports ====================
+export const getAdminRevenueReport = (timeframe = 'month') => axiosClient.get('/admin/reports/revenue', { params: { timeframe } });
+export const getAdminTopServices = (limit = 5) => axiosClient.get('/admin/reports/top-services', { params: { limit } });
+
+// ==================== Configs ====================
+export const getAdminConfigs = () => axiosClient.get('/admin/configs');
+export const updateAdminConfigs = (data) => axiosClient.put('/admin/configs', data);
+
+// ==================== System Logs ====================
+export const getAdminSystemLogs = (params) => axiosClient.get('/admin/system-logs', { params });

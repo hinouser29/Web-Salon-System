@@ -46,6 +46,7 @@ public class AppointmentBookingService {
     private final UserRepository userRepository;
     private final InvoiceRepository invoiceRepository;
     private final SalonMapper salonMapper;
+    private final EmailService emailService;
 
     @Transactional
     public AppointmentResponse createAppointment(CreateAppointmentRequest request) {
@@ -98,6 +99,18 @@ public class AppointmentBookingService {
         appointment = appointmentRepository.save(appointment);
         createInvoiceForAppointment(appointment, service.getPrice());
 
+        try {
+            emailService.sendAppointmentConfirmation(
+                    bookedBy.getEmail(),
+                    customer.getUser().getFullName(),
+                    service.getName(),
+                    request.getAppointmentDate().toString(),
+                    request.getStartTime().toString()
+            );
+        } catch (Exception e) {
+            // Ignore email errors to avoid failing the booking
+        }
+
         return salonMapper.toAppointmentResponse(
                 appointmentRepository.findByIdWithDetails(appointment.getId()).orElse(appointment));
     }
@@ -149,6 +162,53 @@ public class AppointmentBookingService {
         appointment.setStatus(AppointmentStatus.CONFIRMED);
         appointment = appointmentRepository.save(appointment);
         return salonMapper.toAppointmentResponse(appointment);
+    }
+
+    @Transactional
+    public AppointmentResponse completeAppointment(UUID appointmentId) {
+        Appointment appointment = appointmentRepository.findByIdWithDetails(appointmentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPOINTMENT_NOT_FOUND));
+
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED
+                || appointment.getStatus() == AppointmentStatus.COMPLETED) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Appointment is already completed or cancelled.");
+        }
+        appointment.setStatus(AppointmentStatus.COMPLETED);
+        appointment = appointmentRepository.save(appointment);
+
+        try {
+            emailService.sendAppointmentThankYou(
+                    appointment.getCustomer().getUser().getEmail(),
+                    appointment.getCustomer().getUser().getFullName()
+            );
+        } catch (Exception e) {
+            // Ignore email errors
+        }
+
+        return salonMapper.toAppointmentResponse(appointment);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AppointmentResponse> listTodayAppointments() {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        return appointmentRepository.findAllWithDetails().stream()
+                .filter(a -> today.equals(a.getAppointmentDate()))
+                .map(salonMapper::toAppointmentResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AppointmentResponse> listMyScheduleAsEmployee() {
+        UUID userId = SecurityUtils.getCurrentUserId();
+        java.time.LocalDate today = java.time.LocalDate.now();
+        return appointmentRepository.findAllWithDetails().stream()
+                .filter(a -> today.equals(a.getAppointmentDate()))
+                .filter(a -> a.getServiceLines().stream()
+                        .anyMatch(line -> line.getTechnician() != null
+                                && line.getTechnician().getUserId() != null
+                                && line.getTechnician().getUserId().equals(userId)))
+                .map(salonMapper::toAppointmentResponse)
+                .toList();
     }
 
     private Customer getCurrentCustomer() {

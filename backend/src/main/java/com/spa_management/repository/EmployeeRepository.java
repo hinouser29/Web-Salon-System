@@ -12,6 +12,8 @@ import com.spa_management.entity.Employee;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
+    @Query("SELECT e FROM Employee e WHERE e.user.id = :userId")
+    java.util.Optional<Employee> findByUserId(@Param("userId") UUID userId);
 
     @Query("""
             SELECT e FROM Employee e

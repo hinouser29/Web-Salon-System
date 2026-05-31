@@ -74,4 +74,27 @@ public class AppointmentController {
                 "Appointment confirmed",
                 appointmentBookingService.confirmAppointment(id)));
     }
+
+    @PostMapping("/{id}/complete")
+    @PreAuthorize("hasAuthority('PERM_APPOINTMENT_UPDATE_ALL') or hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MANAGER', 'RECEPTIONIST', 'STAFF', 'TECHNICIAN', 'SUPPORT')")
+    @Operation(summary = "Mark an appointment as completed")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> complete(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.success(
+                "Appointment completed",
+                appointmentBookingService.completeAppointment(id)));
+    }
+
+    @GetMapping("/today")
+    @PreAuthorize("hasAuthority('PERM_APPOINTMENT_READ_ALL') or hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MANAGER', 'RECEPTIONIST', 'STAFF', 'TECHNICIAN', 'SUPPORT')")
+    @Operation(summary = "List today's appointments")
+    public ResponseEntity<ApiResponse<List<AppointmentResponse>>> listToday() {
+        return ResponseEntity.ok(ApiResponse.success(appointmentBookingService.listTodayAppointments()));
+    }
+
+    @GetMapping("/my-schedule")
+    @PreAuthorize("hasAnyRole('STAFF', 'TECHNICIAN', 'SUPPORT')")
+    @Operation(summary = "List today's appointments assigned to current technician")
+    public ResponseEntity<ApiResponse<List<AppointmentResponse>>> mySchedule() {
+        return ResponseEntity.ok(ApiResponse.success(appointmentBookingService.listMyScheduleAsEmployee()));
+    }
 }

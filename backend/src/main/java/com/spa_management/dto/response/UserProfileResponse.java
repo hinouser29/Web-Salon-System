@@ -36,4 +36,11 @@ public class UserProfileResponse {
     private boolean isActive;
     private Instant createdAt;
     private Instant updatedAt;
+    
+    // Customer specific
+    private Integer loyaltyPoints;
+    private String loyaltyTier;
+    
+    // RBAC Permissions
+    private java.util.List<String> permissions;
 }
