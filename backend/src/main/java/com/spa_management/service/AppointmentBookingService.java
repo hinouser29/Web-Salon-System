@@ -16,6 +16,7 @@ import com.spa_management.entity.Branch;
 import com.spa_management.entity.Customer;
 import com.spa_management.entity.Employee;
 import com.spa_management.entity.Invoice;
+import com.spa_management.entity.Payment;
 import com.spa_management.entity.SalonService;
 import com.spa_management.entity.User;
 import com.spa_management.entity.enums.AppointmentStatus;
@@ -97,7 +98,7 @@ public class AppointmentBookingService {
         appointment.getServiceLines().add(line);
 
         appointment = appointmentRepository.save(appointment);
-        createInvoiceForAppointment(appointment, service.getPrice());
+        createInvoiceForAppointment(appointment, service.getPrice(), request.getPaymentMethod());
 
         try {
             emailService.sendAppointmentConfirmation(
@@ -248,7 +249,7 @@ public class AppointmentBookingService {
         }
     }
 
-    private void createInvoiceForAppointment(Appointment appointment, BigDecimal amount) {
+    private void createInvoiceForAppointment(Appointment appointment, BigDecimal amount, String paymentMethod) {
         Invoice invoice = Invoice.builder()
                 .appointment(appointment)
                 .customer(appointment.getCustomer())
@@ -257,6 +258,17 @@ public class AppointmentBookingService {
                 .totalAmount(amount)
                 .paymentStatus(PaymentStatus.PENDING)
                 .build();
-        invoiceRepository.save(invoice);
+        invoice = invoiceRepository.save(invoice);
+        
+        if (paymentMethod != null && !paymentMethod.trim().isEmpty()) {
+            Payment payment = Payment.builder()
+                    .invoice(invoice)
+                    .amount(amount)
+                    .paymentMethod(paymentMethod)
+                    .paymentStatus(PaymentStatus.PENDING)
+                    .build();
+            invoice.getPayments().add(payment);
+            invoiceRepository.save(invoice);
+        }
     }
 }

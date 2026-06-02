@@ -54,3 +54,7 @@ export const updateAdminConfigs = (data) => axiosClient.put('/admin/configs', da
 
 // ==================== System Logs ====================
 export const getAdminSystemLogs = (params) => axiosClient.get('/admin/system-logs', { params });
+
+// ==================== Invoices ====================
+export const getInvoiceByAppointment = (appointmentId) => axiosClient.get(`/invoices/by-appointment/${appointmentId}`);
+export const staffPayInvoice = (invoiceId, data) => axiosClient.post(`/invoices/${invoiceId}/staff-pay`, data);

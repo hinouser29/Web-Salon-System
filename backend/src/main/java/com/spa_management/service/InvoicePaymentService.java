@@ -93,22 +93,29 @@ public class InvoicePaymentService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "Invoice is already paid.");
         }
 
-        Payment payment = Payment.builder()
-                .invoice(invoice)
-                .amount(invoice.getTotalAmount())
-                .paymentMethod(request.getPaymentMethod())
-                .transactionCode("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                .paymentStatus(PaymentStatus.PAID)
-                .paidAt(Instant.now())
-                .build();
-        invoice.getPayments().add(payment);
+        Payment payment = invoice.getPayments().stream()
+                .filter(p -> p.getPaymentStatus() == PaymentStatus.PENDING)
+                .findFirst()
+                .orElseGet(() -> {
+                    Payment newPayment = Payment.builder()
+                            .invoice(invoice)
+                            .amount(invoice.getTotalAmount())
+                            .build();
+                    invoice.getPayments().add(newPayment);
+                    return newPayment;
+                });
+        
+        payment.setPaymentMethod(request.getPaymentMethod());
+        payment.setTransactionCode("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        payment.setPaymentStatus(PaymentStatus.PAID);
+        payment.setPaidAt(Instant.now());
         invoice.setPaymentStatus(PaymentStatus.PAID);
-        invoice = invoiceRepository.save(invoice);
+        Invoice savedInvoice = invoiceRepository.save(invoice);
 
         // Calculate and add loyalty points (1 point per 100,000 VND)
-        Customer customer = invoice.getCustomer();
-        if (invoice.getTotalAmount() != null && invoice.getTotalAmount().doubleValue() > 0) {
-            int pointsEarned = (int) (invoice.getTotalAmount().doubleValue() / 100000.0);
+        Customer customer = savedInvoice.getCustomer();
+        if (savedInvoice.getTotalAmount() != null && savedInvoice.getTotalAmount().doubleValue() > 0) {
+            int pointsEarned = (int) (savedInvoice.getTotalAmount().doubleValue() / 100000.0);
             if (pointsEarned > 0) {
                 int currentPoints = customer.getLoyaltyPoints() != null ? customer.getLoyaltyPoints() : 0;
                 customer.setLoyaltyPoints(currentPoints + pointsEarned);
@@ -116,7 +123,7 @@ public class InvoicePaymentService {
             }
         }
 
-        return salonMapper.toInvoiceResponse(invoice);
+        return salonMapper.toInvoiceResponse(savedInvoice);
     }
 
     @Transactional(readOnly = true)

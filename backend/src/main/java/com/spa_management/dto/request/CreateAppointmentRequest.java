@@ -26,6 +26,8 @@ public class CreateAppointmentRequest {
 
     private UUID technicianId;
 
+    private String paymentMethod;
+
     @NotNull(message = "Appointment date is required")
     @FutureOrPresent(message = "Appointment date must be today or in the future")
     private LocalDate appointmentDate;

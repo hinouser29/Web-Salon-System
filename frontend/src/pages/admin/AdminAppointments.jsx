@@ -77,6 +77,42 @@ export default function AdminAppointments() {
     });
   };
 
+  const handleOpenPayment = async (apptId) => {
+    try {
+      const res = await getInvoiceByAppointment(apptId);
+      const invoice = res.data?.data;
+      if (invoice) {
+        if (invoice.paymentStatus === 'PAID') {
+          toast.success('Hóa đơn này đã được thanh toán!');
+          return;
+        }
+        setPaymentInvoice(invoice);
+        // Default to the first pending payment's method if it exists, otherwise CASH
+        const pendingPayment = invoice.payments?.find(p => p.paymentStatus === 'PENDING');
+        setPaymentMethod(pendingPayment?.paymentMethod || 'CASH');
+        setShowPaymentModal(true);
+      }
+    } catch (err) {
+      toast.error('Không tìm thấy hóa đơn cho lịch hẹn này.');
+    }
+  };
+
+  const handleConfirmPay = async () => {
+    if (!paymentInvoice || !paymentMethod) return;
+    try {
+      setIsProcessingPayment(true);
+      await staffPayInvoice(paymentInvoice.id, paymentMethod);
+      toast.success('Thu tiền thành công!');
+      setShowPaymentModal(false);
+      setPaymentInvoice(null);
+      queryClient.invalidateQueries({ queryKey: ['appointments', 'all'] });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Lỗi khi thu tiền');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   const filtered = appointments.filter(appt => {
     const matchStatus = filterStatus === 'ALL' || appt.status === filterStatus;
     const matchDate = !filterDate || appt.appointmentDate === filterDate;

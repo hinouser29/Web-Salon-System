@@ -23,6 +23,7 @@ export default function BookingPage() {
     appointmentDate: '',
     startTime: '',
     notes: '',
+    paymentMethod: 'CASH'
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -77,6 +78,7 @@ export default function BookingPage() {
         appointmentDate: form.appointmentDate,
         startTime: form.startTime,
         notes: form.notes || null,
+        paymentMethod: form.paymentMethod,
       });
       const appt = res.data?.data;
       setSuccess(`Đặt lịch thành công! Trạng thái: ${STATUS_LABELS[appt?.status] || appt?.status}`);
@@ -356,6 +358,34 @@ export default function BookingPage() {
                   </div>
                 </div>
               )}
+
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: 'block', marginBottom: 12, fontWeight: 600 }}>Phương thức thanh toán dự kiến</label>
+                <div style={{ display: 'flex', gap: 16 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '12px 16px', border: form.paymentMethod === 'CASH' ? '2px solid var(--pink)' : '1px solid #ddd', borderRadius: 8, background: form.paymentMethod === 'CASH' ? '#fff4f8' : '#fff' }}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      value="CASH" 
+                      checked={form.paymentMethod === 'CASH'} 
+                      onChange={(e) => setForm({...form, paymentMethod: e.target.value})}
+                      style={{ marginRight: 8 }}
+                    />
+                    Tiền mặt tại Salon
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '12px 16px', border: form.paymentMethod === 'BANK_TRANSFER' ? '2px solid var(--pink)' : '1px solid #ddd', borderRadius: 8, background: form.paymentMethod === 'BANK_TRANSFER' ? '#fff4f8' : '#fff' }}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      value="BANK_TRANSFER" 
+                      checked={form.paymentMethod === 'BANK_TRANSFER'} 
+                      onChange={(e) => setForm({...form, paymentMethod: e.target.value})}
+                      style={{ marginRight: 8 }}
+                    />
+                    Chuyển khoản / Quẹt thẻ
+                  </label>
+                </div>
+              </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <button type="button" className="btn btn-outline" onClick={prevStep} disabled={submitting}>
